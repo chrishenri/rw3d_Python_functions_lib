@@ -186,15 +186,15 @@ def _add_two_3D_DataArray_(arr1,arr2):
 
 #:-------------
 def get_time_discretization(fp,file,it_start=-1,it_end=-1):
-    dfs = mikeio.read(fp)
+    dfs = mikeio.read(fp,time=slice(it_start,it_end))
     time = dfs.time.to_numpy()
-    time_it = time[it_start:it_end+1]
-    nt = len(time_it)
+    #time_it = time[it_start:it_end+1]
+    nt = len(time)
     
     dt = dfs.timestep/60/60/24/365
-    time_disc = np.linspace(0, nt*dt, num=nt)
+    dt_disc = np.full((nt,), dt)
     
-    _print_time_discretization_(time_disc,file,nt,'time_disc')
+    _print_time_discretization_(dt_disc,file,nt,'time_disc')
     del dfs
     gc.collect()
     
