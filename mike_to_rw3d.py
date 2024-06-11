@@ -56,6 +56,54 @@ def get_discretization(fp,file,pr):
 
 
 #------------------------------------------------------------------------------
+def get_part_inj(fp,fp_pre,file,pr):
+    dfs = mikeio.read(fp,items='Number of particles')
+    npinj = dfs['Number of particles'].values[0,:,:,:]
+    npinj = np.nan_to_num(npinj)
+    ind = np.nonzero(npinj)
+    
+    disc = get_discretization(fp_pre,'','F')
+    floor = get_floor_elevation(fp_pre,'','F')
+    mesh = get_mesh(disc,floor)
+    
+    iz_birth = ind[0]
+    iy_birth = ind[1]
+    ix_birth = ind[2]
+    xloc = 1/8*disc.dx,(1/8+1/4)*disc.dx,(1/8+2/4)*disc.dx,(1/8+3/4)*disc.dx
+    yloc = 1/8*disc.dy,(1/8+1/4)*disc.dy,(1/8+2/4)*disc.dy,(1/8+3/4)*disc.dy
+    xloc_part = [xloc[1],xloc[2],xloc[0],xloc[1],xloc[2],xloc[3],xloc[1],xloc[2],xloc[1],xloc[2]]
+    yloc_part = [yloc[3],yloc[3],yloc[2],yloc[2],yloc[2],yloc[2],yloc[1],yloc[1],yloc[0],yloc[0]]
+    
+    part_loc = np.empty([0,3])
+    mult = 0.9
+    for icell in range(len(ix_birth)):
+        ix = ix_birth[icell]
+        iy = iy_birth[icell]
+        iz = iz_birth[icell]
+        xloc_part_cell = xloc_part+mesh.mesh_x[iz,iy,ix]
+        yloc_part_cell = yloc_part+mesh.mesh_y[iz,iy,ix]
+        zloc_part_cell = np.full((10,), mesh.mesh_z[iz,iy,ix]+disc.dz[iz,iy,ix]*mult)
+        part_loc_cell = np.vstack((xloc_part_cell,yloc_part_cell,zloc_part_cell)).T
+        
+        part_loc = np.append(part_loc, part_loc_cell,axis=0)
+        
+    #print
+    if pr=='T':
+        df_xyz = pd.DataFrame()
+        mp = 0.001
+        izone = 0
+        ispe = 1
+        
+        df_xyz['x0'] = part_loc[:,0]
+        df_xyz['y0'] = part_loc[:,1]
+        df_xyz['z0'] = part_loc[:,2]
+        df_xyz['mp'] = mp
+        df_xyz['izone'] = izone
+        df_xyz['ispe'] = ispe
+        
+        df_xyz.to_csv(file,sep=' ',index=False)
+    
+#------------------------------------------------------------------------------
 #--------------get mesh (lower left coordinates of each cell)
 def get_mesh(disc,floor):
     mesh_x = np.zeros([disc.nlay, disc.nrow, disc.ncol+1], dtype=float)
